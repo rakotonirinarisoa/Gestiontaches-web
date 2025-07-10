@@ -11,7 +11,6 @@ function App() {
   const [newTitle, setNewTitle] = useState("");
   const [message, setMessage] = useState("");
 
-  // Mapping int -> string (labels de statut)
   const StatusLabels = {
     0: "ToDo",
     1: "InProgress",
