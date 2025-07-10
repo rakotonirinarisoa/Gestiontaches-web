@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-//const API_BASE_URL = "http://localhost:5000/api/tasks"; // ⚠️ adapte si besoin
 const API_BASE_URL = "https://localhost:7286/api/Tasks";
 
 const CREATED_BY_USER_ID = 1;
@@ -12,10 +11,20 @@ function App() {
   const [newTitle, setNewTitle] = useState("");
   const [message, setMessage] = useState("");
 
-  // Charger les tâches à l'ouverture
+  // Mapping int -> string (labels de statut)
+  const StatusLabels = {
+    0: "ToDo",
+    1: "InProgress",
+    2: "Done",
+  };
+
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    console.log("Tâches reçues:", tasks);
+  }, [tasks]);
 
   const fetchTasks = async () => {
     try {
@@ -26,7 +35,6 @@ function App() {
     }
   };
 
-  // Créer une tâche
   const createTask = async () => {
     if (!newTitle.trim()) return;
 
@@ -46,13 +54,13 @@ function App() {
     }
   };
 
-  // Avancer le statut
+  // Avancer le statut en mode entier
   const advanceStatus = async (task) => {
     let newStatus = null;
-    if (task.status === "ToDo") newStatus = "InProgress";
-    else if (task.status === "InProgress") newStatus = "Done";
+    if (task.status === 0) newStatus = 1; // ToDo -> InProgress
+    else if (task.status === 1) newStatus = 2; // InProgress -> Done
 
-    if (!newStatus) return;
+    if (newStatus === null) return;
 
     try {
       await axios.put(`${API_BASE_URL}/${task.id}/status`, {
@@ -71,12 +79,29 @@ function App() {
     }
   };
 
-  // Regrouper les tâches par statut
+  // Regrouper les tâches par status numérique
   const groupedTasks = {
-    ToDo: tasks.filter(t => t.status === "ToDo"),
-    InProgress: tasks.filter(t => t.status === "InProgress"),
-    Done: tasks.filter(t => t.status === "Done"),
+    ToDo: [],
+    InProgress: [],
+    Done: [],
+    Unknown: [],
   };
+
+  tasks.forEach(task => {
+    switch (task.status) {
+      case 0:
+        groupedTasks.ToDo.push(task);
+        break;
+      case 1:
+        groupedTasks.InProgress.push(task);
+        break;
+      case 2:
+        groupedTasks.Done.push(task);
+        break;
+      default:
+        groupedTasks.Unknown.push(task);
+    }
+  });
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
@@ -97,18 +122,24 @@ function App() {
       </div>
 
       <div style={{ display: "flex", gap: "20px" }}>
-        {["ToDo", "InProgress", "Done"].map(status => (
+        {["ToDo", "InProgress", "Done", "Unknown"].map(status => (
           <div key={status} style={{ flex: 1 }}>
             <h3>{status}</h3>
+            {groupedTasks[status].length === 0 && <p>Aucune tâche</p>}
             {groupedTasks[status].map(task => (
-              <div key={task.id} style={{
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                padding: "10px",
-                marginBottom: "10px",
-                background: "#f9f9f9"
-              }}>
-                <div><strong>{task.title}</strong></div>
+              <div
+                key={task.id}
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                  marginBottom: "10px",
+                  background: "#f9f9f9",
+                }}
+              >
+                <div>
+                  <strong>{task.title}</strong>
+                </div>
                 {(status === "ToDo" || status === "InProgress") && (
                   <button
                     onClick={() => advanceStatus(task)}
@@ -127,4 +158,3 @@ function App() {
 }
 
 export default App;
-
